@@ -1,0 +1,11 @@
+# Never commit keys, keystores or generated CA state
+*.key
+*.p12
+*.pfx
+*.jks
+private/
+newcerts/
+*.srl
+index.txt*
+serial*
+crlnumber*

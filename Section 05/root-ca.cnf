@@ -1,0 +1,73 @@
+# root-ca.cnf : configuration for the lab's ROOT CA (TLS-26, TLS-27, TLS-30)
+# Target: OpenSSL 3.5.5 on Ubuntu 26.04 (tested locally with OpenSSL 3.6.4).
+# One path for the whole CA: /root/tls-ca (the 2021 files mixed /root/ca and /root/my-own-ca).
+# Reference: man openssl-ca, man x509v3_config (docs.openssl.org/3.5).
+
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir               = /root/tls-ca/root
+certs             = $dir/certs
+crl_dir           = $dir/crl
+new_certs_dir     = $dir/newcerts
+database          = $dir/index.txt
+serial            = $dir/serial
+crlnumber         = $dir/crlnumber
+
+private_key       = $dir/private/root.key
+certificate       = $dir/certs/root.crt
+
+crl               = $dir/crl/root.crl
+crl_extensions    = crl_ext
+default_crl_days  = 30
+
+# A digest NAME goes here: sha256. Never "-sha256" (that is a command-line flag,
+# and OpenSSL 3 fails with "unsupported ... Algorithm (-sha256 : 0)").
+default_md        = sha256
+
+name_opt          = ca_default
+cert_opt          = ca_default
+# The root only signs intermediates; 10 years for the intermediate.
+default_days      = 3650
+preserve          = no
+# Allow re-issuing a certificate with the same subject (renewal, re-key).
+unique_subject    = no
+# The root never copies extensions from a request: v3_intermediate_ca decides them.
+copy_extensions   = none
+policy            = policy_strict
+
+[ policy_strict ]
+# The root signs only intermediates of the same organisation.
+countryName             = match
+organizationName        = match
+organizationalUnitName  = optional
+commonName              = supplied
+
+[ req ]
+default_md          = sha256
+distinguished_name  = req_distinguished_name
+string_mask         = utf8only
+prompt              = no
+x509_extensions     = v3_root_ca
+
+[ req_distinguished_name ]
+C  = NL
+O  = TLS Essentials Lab
+CN = TLS Essentials Lab Root CA
+
+[ v3_root_ca ]
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always
+basicConstraints       = critical, CA:true
+keyUsage               = critical, keyCertSign, cRLSign
+
+[ v3_intermediate_ca ]
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always
+# pathlen:0 : this intermediate may sign leaf certificates but no further CAs.
+basicConstraints       = critical, CA:true, pathlen:0
+keyUsage               = critical, keyCertSign, cRLSign
+
+[ crl_ext ]
+authorityKeyIdentifier = keyid:always

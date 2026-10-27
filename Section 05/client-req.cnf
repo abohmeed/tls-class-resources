@@ -1,0 +1,15 @@
+# client-req.cnf : the CSR for a client certificate used in mutual TLS (TLS-31)
+# One certificate per person or service; the CN names who it is.
+# The OU carries a group that the server may read ($ssl_client_s_dn in Nginx).
+
+[ req ]
+default_md          = sha256
+distinguished_name  = dn
+string_mask         = utf8only
+prompt              = no
+
+[ dn ]
+C  = NL
+O  = TLS Essentials Lab
+OU = admins
+CN = ahmed

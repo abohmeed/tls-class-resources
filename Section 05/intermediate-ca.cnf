@@ -1,0 +1,78 @@
+# intermediate-ca.cnf : configuration for the lab's INTERMEDIATE CA (TLS-27, TLS-28, TLS-30, TLS-31)
+# Target: OpenSSL 3.5.5 on Ubuntu 26.04 (tested locally with OpenSSL 3.6.4).
+# Reference: man openssl-ca, man x509v3_config (docs.openssl.org/3.5).
+
+[ ca ]
+default_ca = CA_default
+
+[ CA_default ]
+dir               = /root/tls-ca/intermediate
+certs             = $dir/certs
+crl_dir           = $dir/crl
+new_certs_dir     = $dir/newcerts
+database          = $dir/index.txt
+serial            = $dir/serial
+crlnumber         = $dir/crlnumber
+
+private_key       = $dir/private/intermediate.key
+certificate       = $dir/certs/intermediate.crt
+
+crl               = $dir/crl/intermediate.crl
+crl_extensions    = crl_ext
+default_crl_days  = 30
+
+default_md        = sha256
+
+name_opt          = ca_default
+cert_opt          = ca_default
+default_days      = 365
+preserve          = no
+unique_subject    = no
+# copy: take the subjectAltName from the CSR, but only extensions the signing
+# section does not already set. server_cert and client_cert set basicConstraints,
+# keyUsage and extendedKeyUsage, so a request cannot make itself a CA.
+# Without this line the SANs in the CSR are silently dropped (the 2021 files
+# hard-coded mydomain.com into server_cert instead).
+copy_extensions   = copy
+policy            = policy_loose
+
+[ policy_loose ]
+countryName             = optional
+stateOrProvinceName     = optional
+localityName            = optional
+organizationName        = optional
+organizationalUnitName  = optional
+commonName              = supplied
+emailAddress            = optional
+
+[ req ]
+# Used once, to create the intermediate's own CSR.
+default_md          = sha256
+distinguished_name  = req_distinguished_name
+string_mask         = utf8only
+prompt              = no
+
+[ req_distinguished_name ]
+C  = NL
+O  = TLS Essentials Lab
+CN = TLS Essentials Lab Intermediate CA
+
+[ server_cert ]
+basicConstraints       = critical, CA:false
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always
+# ECDSA leaf keys sign; they never encrypt. (For an RSA key add keyEncipherment.)
+keyUsage               = critical, digitalSignature
+extendedKeyUsage       = serverAuth
+# crlDistributionPoints = URI:http://crl.lab.internal/intermediate.crl
+
+[ client_cert ]
+basicConstraints       = critical, CA:false
+subjectKeyIdentifier   = hash
+authorityKeyIdentifier = keyid:always
+keyUsage               = critical, digitalSignature
+extendedKeyUsage       = clientAuth
+# crlDistributionPoints = URI:http://crl.lab.internal/intermediate.crl
+
+[ crl_ext ]
+authorityKeyIdentifier = keyid:always

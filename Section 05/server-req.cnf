@@ -1,0 +1,18 @@
+# server-req.cnf : the CSR for the lab web server (TLS-28)
+# The SANs live in the request; intermediate-ca.cnf copies them (copy_extensions = copy).
+# Browsers match the name against subjectAltName only; the CN is a label.
+
+[ req ]
+default_md          = sha256
+distinguished_name  = dn
+req_extensions      = req_ext
+string_mask         = utf8only
+prompt              = no
+
+[ dn ]
+C  = NL
+O  = TLS Essentials Lab
+CN = www.lab.internal
+
+[ req_ext ]
+subjectAltName = DNS:www.lab.internal, DNS:lab.internal, IP:127.0.0.1
