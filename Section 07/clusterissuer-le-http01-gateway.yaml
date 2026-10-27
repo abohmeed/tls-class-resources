@@ -1,0 +1,18 @@
+# Slide only (TLS-40 concept 1): HTTP-01 through the Gateway. Needs a cluster reachable on port 80. NOT RUN.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging-http01
+spec:
+  acme:
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      name: letsencrypt-staging-http01-account
+    solvers:
+      - http01:
+          gatewayHTTPRoute:
+            parentRefs:
+              - name: traefik-gateway
+                namespace: kube-system
+                kind: Gateway
+                sectionName: web

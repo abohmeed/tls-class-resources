@@ -1,0 +1,14 @@
+# TLS-40: a CA issuer backed by the S05 intermediate (Section 05/build-ca.sh, BASE /root/tls-ca).
+# The Secret is never committed. Create it first (as root, in /root/tls-ca/intermediate):
+#   openssl pkey -in private/intermediate.key -out private/intermediate-plain.key   # asks for the CA passphrase
+#   kubectl create secret tls lab-ca -n cert-manager --cert=certs/ca-chain.crt --key=private/intermediate-plain.key
+#   shred -u private/intermediate-plain.key
+# cert-manager cannot read an encrypted key ("unknown private key type: ENCRYPTED PRIVATE KEY"),
+# so the intermediate key now sits unencrypted in a cluster Secret: the price of an in-cluster CA.
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: lab-ca
+spec:
+  ca:
+    secretName: lab-ca   # in the cert-manager namespace (the cluster resource namespace)

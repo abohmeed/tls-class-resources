@@ -1,0 +1,28 @@
+# Alternative (one slide): let cert-manager's gateway-shim create the Certificate from a Gateway annotation.
+# The listener needs a hostname, or the shim skips it.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    providers:
+      kubernetesGateway:
+        enabled: true
+    gateway:
+      annotations:
+        cert-manager.io/cluster-issuer: selfsigned
+      listeners:
+        web:
+          namespacePolicy:
+            from: All
+        websecure:
+          port: 8443
+          protocol: HTTPS
+          mode: Terminate
+          hostname: app.k8s.tls.devcloudlab.com
+          namespacePolicy:
+            from: All
+          certificateRefs:
+            - name: app-tls

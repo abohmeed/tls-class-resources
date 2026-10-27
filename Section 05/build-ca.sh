@@ -26,8 +26,9 @@ for ca in root intermediate; do
   chmod 700 "$BASE/$ca/private"
   touch "$BASE/$ca/index.txt"
 done
-echo 1000 > "$BASE/root/serial";         echo 1000 > "$BASE/root/crlnumber"
-echo 2000 > "$BASE/intermediate/serial"; echo 2000 > "$BASE/intermediate/crlnumber"
+# Serial numbers are random (rand_serial = yes in the .cnf files); only the CRL numbers count up.
+echo 1000 > "$BASE/root/crlnumber"
+echo 2000 > "$BASE/intermediate/crlnumber"
 for f in root-ca intermediate-ca server-req client-req; do
   sed "s#/root/tls-ca#$BASE#g" "$HERE/$f.cnf" > "$BASE/$f.cnf"
 done

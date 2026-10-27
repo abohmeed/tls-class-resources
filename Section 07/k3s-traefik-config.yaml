@@ -1,0 +1,27 @@
+# /var/lib/rancher/k3s/server/manifests/k3s-traefik-config.yaml
+# Final lab state (TLS-39 plus TLS-40 internal name). web is opened to All so the
+# sectionName leak (trap 5) is real; websecure carries one certificate per name, picked by SNI.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    providers:
+      kubernetesGateway:
+        enabled: true
+    gateway:
+      listeners:
+        web:
+          namespacePolicy:
+            from: All
+        websecure:
+          port: 8443
+          protocol: HTTPS
+          mode: Terminate
+          namespacePolicy:
+            from: All
+          certificateRefs:
+            - name: app-tls
+            - name: internal-tls

@@ -1,0 +1,24 @@
+# TLS-39 end state: web AND websecure open to All (so the trap 5 leak is real), one certificate.
+apiVersion: helm.cattle.io/v1
+kind: HelmChartConfig
+metadata:
+  name: traefik
+  namespace: kube-system
+spec:
+  valuesContent: |-
+    providers:
+      kubernetesGateway:
+        enabled: true
+    gateway:
+      listeners:
+        web:
+          namespacePolicy:
+            from: All
+        websecure:
+          port: 8443
+          protocol: HTTPS
+          mode: Terminate
+          namespacePolicy:
+            from: All
+          certificateRefs:
+            - name: app-tls

@@ -1,0 +1,15 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: app-tls
+  namespace: kube-system
+spec:
+  secretName: app-tls
+  # commonName only so curl -v and openssl show a subject; clients match the SAN (dnsNames).
+  commonName: app.k8s.tls.devcloudlab.com
+  dnsNames:
+    - app.k8s.tls.devcloudlab.com
+  issuerRef:
+    name: selfsigned
+    kind: ClusterIssuer
+    group: cert-manager.io

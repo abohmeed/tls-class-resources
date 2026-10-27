@@ -12,7 +12,10 @@ certs             = $dir/certs
 crl_dir           = $dir/crl
 new_certs_dir     = $dir/newcerts
 database          = $dir/index.txt
-serial            = $dir/serial
+# Random serial numbers (159 bits) instead of a 1000, 1001, ... counter file.
+# RFC 5280 allows up to 20 octets, and scanners such as testssl flag short,
+# predictable serials ("length should be >= 64 bits entropy").
+rand_serial       = yes
 crlnumber         = $dir/crlnumber
 
 private_key       = $dir/private/root.key
