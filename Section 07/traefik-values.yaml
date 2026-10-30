@@ -1,0 +1,28 @@
+# Final lab state (TLS-39 plus the TLS-40 internal name):
+#   helm upgrade traefik oci://ghcr.io/traefik/helm/traefik --version 42.1.3 -n kube-system -f traefik-values.yaml
+# websecure carries one certificate per name; Traefik picks the one that matches the SNI.
+providers:
+  kubernetesGateway:
+    enabled: true
+gateway:
+  listeners:
+    web:
+      namespacePolicy:
+        from: All
+    websecure:
+      port: 8443
+      protocol: HTTPS
+      mode: Terminate
+      namespacePolicy:
+        from: All
+      certificateRefs:
+        - name: app-tls
+        - name: internal-tls
+service:
+  spec:
+    type: NodePort
+ports:
+  web:
+    nodePort: 30080
+  websecure:
+    nodePort: 30443

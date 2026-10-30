@@ -1,0 +1,27 @@
+# TLS-39 end state (Traefik chart 42.1.3, installed into kube-system):
+#   helm install traefik oci://ghcr.io/traefik/helm/traefik --version 42.1.3 -n kube-system -f traefik-values-tls39.yaml
+# web AND websecure accept routes from All namespaces (so the missing-sectionName leak is real), one certificate.
+providers:
+  kubernetesGateway:
+    enabled: true
+gateway:
+  listeners:
+    web:
+      namespacePolicy:
+        from: All
+    websecure:
+      port: 8443
+      protocol: HTTPS
+      mode: Terminate
+      namespacePolicy:
+        from: All
+      certificateRefs:
+        - name: app-tls
+service:
+  spec:
+    type: NodePort
+ports:
+  web:
+    nodePort: 30080
+  websecure:
+    nodePort: 30443

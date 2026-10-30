@@ -9,7 +9,8 @@ Lab baseline: Ubuntu 26.04 LTS (OpenSSL 3.5, nginx 1.28, Apache 2.4, Tomcat 10.1
 | Section 01 | The lab container: a Dockerfile that runs Ubuntu 26.04's OpenSSL 3.5 on any OS, and tls-lab.sh, a shell alias for it |
 | Section 04 | HTTPS server configs for Nginx, Apache and Tomcat, following Mozilla's intermediate TLS profile |
 | Section 05 | Your own CA: root and intermediate CA configs, server and client request configs, an mTLS Nginx config, and build-ca.sh, which builds and checks the whole chain (random serial numbers) |
-| Section 07 | TLS on Kubernetes (k3s, Traefik, Gateway API, cert-manager): the Traefik HelmChartConfig, self-signed and lab-CA ClusterIssuers, Certificates, a whoami app with its HTTPRoutes, and Let's Encrypt DNS-01 and HTTP-01 issuers |
+| Section 07 | TLS on Kubernetes (a kind cluster, Traefik, Gateway API, cert-manager): the kind config, Traefik Helm values, self-signed and lab-CA ClusterIssuers, Certificates, a whoami app with its HTTPRoutes, Let's Encrypt DNS-01 (Route 53) and HTTP-01 issuers, and the IAM policy for cert-manager. The k3s-*.yaml files are the same Traefik settings as a k3s HelmChartConfig |
+| Section 09 | Troubleshooting: make-broken-certs.sh, which builds a throwaway CA and five broken certificates in the current folder (TLS-44), and tls-capture-dsb.pcapng, a short HTTPS capture with its TLS secrets inside, which opens decrypted in Wireshark 3.0 or later (TLS-45) |
 
 More sections are added as their lessons are published.
 
@@ -33,18 +34,27 @@ sudo CA_PASS='a-lab-only-passphrase' ./build-ca.sh
 
 The script creates the CA under /root/tls-ca (override with BASE=...), issues a server and a client certificate, revokes one, publishes CRLs and tests mutual TLS. It stops at the first failed check.
 
-## Section 07: the lab CA issuer
+## Section 07: the cluster and the lab CA issuer
+
+```bash
+cd "Section 07"
+kind create cluster --name tls --config kind-config.yaml        # HTTP on 127.0.0.1:30080, HTTPS on 127.0.0.1:30443
+kubectl apply --server-side -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.6.3/standard-install.yaml
+helm install traefik oci://ghcr.io/traefik/helm/traefik --version 42.1.3 -n kube-system -f traefik-values-tls39.yaml
+helm install cert-manager oci://quay.io/jetstack/charts/cert-manager --version v1.21.3 -n cert-manager --create-namespace \
+  --set crds.enabled=true --set config.gatewayAPI.enabled=true --wait
+```
 
 clusterissuer-lab-ca.yaml needs a Secret built from the Section 05 CA. It is never committed; create it with:
 
 ```bash
-cd /root/tls-ca/intermediate
-openssl pkey -in private/intermediate.key -out private/intermediate-plain.key   # asks for the CA passphrase
-kubectl create secret tls lab-ca -n cert-manager --cert=certs/ca-chain.crt --key=private/intermediate-plain.key
-shred -u private/intermediate-plain.key
+sudo cp /root/tls-ca/intermediate/certs/ca-chain.crt /root/tls-ca/root/certs/root.crt .
+sudo install -o "$USER" -m 600 /root/tls-ca/intermediate/private/intermediate.key .
+openssl pkey -in intermediate.key | kubectl create secret tls lab-ca -n cert-manager --cert=ca-chain.crt --key=/dev/stdin   # asks for the CA passphrase
+shred -u intermediate.key
 ```
 
-Copy k3s-traefik-config.yaml (or k3s-traefik-config-tls39.yaml for TLS-39 alone) to /var/lib/rancher/k3s/server/manifests/. On k3s, do not apply the Gateway API CRDs by hand: k3s bundles them. The Let's Encrypt issuers carry a placeholder hostedZoneID; put your own zone ID in before applying them.
+The decrypted key goes through the pipe and never reaches the disk. On k3s, copy k3s-traefik-config.yaml (or k3s-traefik-config-tls39.yaml) to /var/lib/rancher/k3s/server/manifests/ instead of installing Traefik, and do not apply the Gateway API CRDs by hand: k3s bundles them. The Let's Encrypt issuers and route53-cert-manager-policy.json carry a placeholder hosted zone ID; put your own zone ID in before using them.
 
 These files are for a lab. Never reuse the lab CA, its keys or its passphrase for anything real.
 
