@@ -47,3 +47,23 @@ shred -u private/intermediate-plain.key
 Copy k3s-traefik-config.yaml (or k3s-traefik-config-tls39.yaml for TLS-39 alone) to /var/lib/rancher/k3s/server/manifests/. On k3s, do not apply the Gateway API CRDs by hand: k3s bundles them. The Let's Encrypt issuers carry a placeholder hostedZoneID; put your own zone ID in before applying them.
 
 These files are for a lab. Never reuse the lab CA, its keys or its passphrase for anything real.
+
+## Where to go next (TLS-47)
+
+Where changes are announced:
+- CA/Browser Forum ballots (the rules for public certificates, such as SC-081 on lifetimes): https://cabforum.org/ballots/
+- Let's Encrypt blog: https://letsencrypt.org/blog/
+- Certbot changelog: https://github.com/certbot/certbot/blob/main/certbot/CHANGELOG.md
+- cert-manager releases: https://cert-manager.io/docs/releases/
+
+Tools to keep:
+- TLSRef Configurator (formerly Mozilla's SSL Configuration Generator): https://configurator.tlsref.org/
+- testssl.sh (on Ubuntu, the package testssl.sh installs the command testssl): https://testssl.sh/
+- crt.sh, search Certificate Transparency logs: https://crt.sh/
+- openssl s_client: https://docs.openssl.org/3.5/man1/openssl-s_client/
+
+Standards behind the course:
+- TLS 1.3: RFC 9846 (July 2026, replaces RFC 8446): https://www.rfc-editor.org/rfc/rfc9846.html
+- X.509 certificates and CRLs: RFC 5280: https://www.rfc-editor.org/rfc/rfc5280.html
+- ACME: RFC 8555: https://www.rfc-editor.org/rfc/rfc8555.html
+- ACME Renewal Information (ARI): RFC 9773: https://www.rfc-editor.org/rfc/rfc9773.html

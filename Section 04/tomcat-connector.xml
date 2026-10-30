@@ -1,33 +1,32 @@
 <!--
   tomcat-connector.xml : the TLS connector for /etc/tomcat10/server.xml (TLS-24)
-  tomcat10 (10.1.x) from apt, OpenJDK 25 (JSSE unless tomcat-native is installed).
-  Attributes from tomcat.apache.org/tomcat-10.1-doc/config/http.html :
-    ciphers      = TLS 1.2 and below only
-    cipherSuites = TLS 1.3 suites (the Mozilla template puts both in ciphers; 10.1 splits them)
-    certificateFile / certificateKeyFile / certificateChainFile take PEM directly.
-  Port 8443 (the tomcat user cannot bind 443). Files must be readable by the tomcat user.
-  VERIFY ON THE UBUNTU 26.04 LANE: package paths, the systemd sandbox of tomcat10.service,
-  which sslImplementation the log reports, and the group negotiated with OpenJDK 25.
+  Insert it right after <Service name="Catalina">.
+  tomcat10 10.1.55 from apt, OpenJDK 25. The package also installs Tomcat Native,
+  so this connector runs on OpenSSL 3.5.5 (the log calls it https-openssl-nio-8443).
+  Tomcat 10.1: ciphers holds the TLS 1.2 suites, cipherSuites the TLS 1.3 suites.
+  certificateFile and certificateKeyFile take PEM files directly (no keystore);
+  add certificateChainFile for the intermediates when a CA issued the certificate.
+  The tomcat user must read the files: owner root, group tomcat, files 640, folder 750.
 -->
 <Connector port="8443" protocol="org.apache.coyote.http11.Http11NioProtocol"
            SSLEnabled="true" maxThreads="150">
     <UpgradeProtocol className="org.apache.coyote.http2.Http2Protocol" />
-    <SSLHostConfig protocols="TLSv1.2,TLSv1.3"
+    <SSLHostConfig protocols="+TLSv1.2,+TLSv1.3"
                    ciphers="ECDHE-ECDSA-AES128-GCM-SHA256:ECDHE-RSA-AES128-GCM-SHA256:ECDHE-ECDSA-AES256-GCM-SHA384:ECDHE-RSA-AES256-GCM-SHA384:ECDHE-ECDSA-CHACHA20-POLY1305:ECDHE-RSA-CHACHA20-POLY1305"
                    cipherSuites="TLS_AES_128_GCM_SHA256:TLS_AES_256_GCM_SHA384:TLS_CHACHA20_POLY1305_SHA256"
                    honorCipherOrder="false">
-        <Certificate certificateFile="/etc/tomcat10/tls/www.lab.internal.crt"
-                     certificateKeyFile="/etc/tomcat10/tls/www.lab.internal.key"
-                     certificateChainFile="/etc/tomcat10/tls/intermediate.crt" />
+        <Certificate certificateFile="/etc/tomcat10/tls/server.crt"
+                     certificateKeyFile="/etc/tomcat10/tls/server.key" />
     </SSLHostConfig>
 </Connector>
 
 <!--
-  Behind Nginx instead (TLS-24, second half): Nginx terminates TLS, Tomcat listens on 127.0.0.1:8080,
-  and this valve inside <Host> makes request.isSecure() and the scheme follow X-Forwarded-Proto:
-  <Valve className="org.apache.catalina.valves.RemoteIpValve"
-         remoteIpHeader="x-forwarded-for" protocolHeader="x-forwarded-proto" />
-  Nginx side:
+  Behind Nginx instead: Nginx terminates TLS and talks plain HTTP to Tomcat on 8080.
+  Tomcat side, one line inside <Host>: the scheme and isSecure() then follow X-Forwarded-Proto
+  (its defaults: remoteIpHeader X-Forwarded-For, protocolHeader X-Forwarded-Proto,
+  internalProxies includes 127.0.0.1):
+    <Valve className="org.apache.catalina.valves.RemoteIpValve" />
+  Nginx side, in the 443 server block of nginx-tls.conf:
     location / {
         proxy_pass http://127.0.0.1:8080;
         proxy_set_header Host $host;
@@ -36,6 +35,7 @@
     }
   Re-encrypting to Tomcat's 8443 instead: proxy_pass https://127.0.0.1:8443; and, because
   proxy_ssl_verify is OFF by default (nginx.org), also
-    proxy_ssl_verify on; proxy_ssl_trusted_certificate /etc/nginx/ssl/root.crt;
-    proxy_ssl_name www.lab.internal; proxy_ssl_server_name on;
+    proxy_ssl_verify on; proxy_ssl_trusted_certificate /etc/nginx/ssl/server.crt;
+    proxy_ssl_name localhost; proxy_ssl_server_name on;
+  With a CA, proxy_ssl_trusted_certificate is the root and proxy_ssl_name the certificate's name.
 -->
